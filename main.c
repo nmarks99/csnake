@@ -1,79 +1,114 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_video.h>
-#include <stdbool.h> 
-#include <stdio.h>
+#include <stdbool.h>
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int STEP_SIZE = 5;
+const int SNAKE_START_X = 500;
+const int SNAKE_START_Y = 500;
+const int SNAKE_WIDTH = 10;
+const int SNAKE_HEIGHT = 10;
 
-SDL_Window *window = NULL;
-SDL_Surface *screen_surface = NULL;
-SDL_Surface *hello_world = NULL;
-
-bool init_graphics() {
-    bool success = true;
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("Failed to initialize SDL\n");
-        success = false;
-    }
-    else {
-        window = SDL_CreateWindow(
-            "window name",
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT,
-            SDL_WINDOW_SHOWN
-        );
-        if (window == NULL) {
-            printf("Could not create window\n");
-            success = false;
-        }
-        else {
-            screen_surface = SDL_GetWindowSurface(window);
-        }
-    }
-    return success;
-}
-
-bool load_media(const char* img_path) {
-    bool success = true;
-    hello_world = SDL_LoadBMP(img_path);
-    if (hello_world == NULL) {
-        success = false;
-    }
-    return success;
-}
-
-// void close() {
-//     SDL_FreeSurface(hello_world);
-//     hello_world = NULL;
-//     SDL_DestroyWindow(window);
-//     window = NULL;
-//     SDL_Quit();
-// }
-
-int main(int argc, char* args[]) {
-    if (!init_graphics()) {
-        printf("failed\n");
-    }
-    else {
-        if (!load_media("./assets/rocket.bmp")) {
-            printf("Failed to load image\n");
-        }
-        else {
-            SDL_BlitSurface(hello_world, NULL, screen_surface, NULL);
-            SDL_UpdateWindowSurface(window);
-            SDL_Delay(2000);
-        }
-    }
+int main() {
+    SDL_Init(SDL_INIT_EVERYTHING);
+    SDL_Window *window = SDL_CreateWindow(
+        "Snake",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        1000,
+        1000,
+        0
+    );
     
-    SDL_FreeSurface(hello_world);
-    hello_world = NULL;
-    SDL_DestroyWindow(window);
-    window = NULL;
-    SDL_Quit();
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Event e;
+    bool running = true;
+   
+    enum Direction {
+        DOWN,
+        LEFT,
+        RIGHT,
+        UP,
+        STOP
+    };
+
+    int dir = 0;
+
+    SDL_Rect head = {
+        .x = SNAKE_START_X,
+        .y = SNAKE_START_Y,
+        .w = SNAKE_WIDTH,
+        .h = SNAKE_HEIGHT
+    };
+
+    SDL_Rect body = {
+        .x = SNAKE_START_X+SNAKE_WIDTH,
+        .y = SNAKE_START_Y,
+        .w = SNAKE_WIDTH,
+        .h = SNAKE_HEIGHT
+    };
+    dir = STOP;
+    while (running) {
+
+        // Check input
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                running = false;
+            }
+            if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym == SDLK_DOWN) {
+                    dir = DOWN;
+                }
+                if (e.key.keysym.sym == SDLK_UP) {
+                    dir = UP;
+                }
+                if (e.key.keysym.sym == SDLK_LEFT) {
+                    dir = LEFT;
+                }
+                if (e.key.keysym.sym == SDLK_RIGHT) {
+                    dir = RIGHT;
+                }
+            }
+            else if (e.type == SDL_KEYUP) {
+                dir = STOP;
+            }
+        }
+
+        // Move
+        switch (dir) {
+            case DOWN:
+                head.y += STEP_SIZE;
+                body.y += STEP_SIZE;
+                break;
+            case UP:
+                head.y -= STEP_SIZE;
+                body.y -= STEP_SIZE;
+                break;
+            case RIGHT:
+                head.x += STEP_SIZE;
+                body.x += STEP_SIZE;
+                break;
+            case LEFT:
+                head.x -= STEP_SIZE;
+                body.x -= STEP_SIZE;
+                break;
+            case STOP:
+                break;
+        }
+
+        // Clear window
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        // Draw body
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderFillRect(renderer, &head);
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &body);
+        
+        SDL_RenderPresent(renderer);
+        SDL_Delay(25);
+
+    }
 
     return 0;
+
 }

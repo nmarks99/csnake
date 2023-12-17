@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Werror -Wall
+CFLAGS = -Wall
 LINKER_FLAGS = -lSDL2
 OBJS = main.c
 OBJ_NAME = csnake
