@@ -7,6 +7,53 @@ const int SNAKE_START_Y = 500;
 const int SNAKE_WIDTH = 10;
 const int SNAKE_HEIGHT = 10;
 
+
+   
+enum Direction {
+    DOWN,
+    LEFT,
+    RIGHT,
+    UP,
+    STOP
+};
+
+
+SDL_Rect create_body_segment(const SDL_Rect *snake_head, int direction) {
+    
+    int segx = snake_head->x;
+    int segy = snake_head->y;
+    const int segw = snake_head->w;
+    const int segh = snake_head->h;
+    switch (direction) {
+        case (DOWN):
+            segy -= segw; 
+            break;
+        case (UP):
+            segy += segw;
+            break;
+        case (RIGHT):
+            segx -= segw;
+            break;
+        case (LEFT):
+            segx += segw;
+            break;
+        default:
+            segx += segw;
+            break;
+            
+    }
+    SDL_Rect seg = {
+        .x = segx,
+        .y = segy,
+        .w = segw,
+        .h = segh
+    };
+
+    return seg;
+}
+
+
+
 int main() {
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_Window *window = SDL_CreateWindow(
@@ -21,14 +68,6 @@ int main() {
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_Event e;
     bool running = true;
-   
-    enum Direction {
-        DOWN,
-        LEFT,
-        RIGHT,
-        UP,
-        STOP
-    };
 
     int dir = 0;
 
@@ -39,13 +78,10 @@ int main() {
         .h = SNAKE_HEIGHT
     };
 
-    SDL_Rect body = {
-        .x = SNAKE_START_X+SNAKE_WIDTH,
-        .y = SNAKE_START_Y,
-        .w = SNAKE_WIDTH,
-        .h = SNAKE_HEIGHT
-    };
     dir = STOP;
+    bool add_segment = false;
+    SDL_Rect body[200];
+    size_t body_index = 0;
     while (running) {
 
         // Check input
@@ -66,43 +102,63 @@ int main() {
                 if (e.key.keysym.sym == SDLK_RIGHT) {
                     dir = RIGHT;
                 }
+                if (e.key.keysym.sym == SDLK_a) {
+                    add_segment = true;
+                }
             }
-            else if (e.type == SDL_KEYUP) {
-                dir = STOP;
-            }
+            // else if (e.type == SDL_KEYUP) {
+            //     dir = STOP;
+            // }
         }
 
         // Move
         switch (dir) {
             case DOWN:
                 head.y += STEP_SIZE;
-                body.y += STEP_SIZE;
+                for (size_t i = 0; i <= body_index; i++) {
+                    body[i].y += STEP_SIZE;
+                }
                 break;
             case UP:
                 head.y -= STEP_SIZE;
-                body.y -= STEP_SIZE;
+                for (size_t i = 0; i <= body_index; i++) {
+                    body[i].y -= STEP_SIZE;
+                }
                 break;
             case RIGHT:
                 head.x += STEP_SIZE;
-                body.x += STEP_SIZE;
+                for (size_t i = 0; i <= body_index; i++) {
+                    body[i].x += STEP_SIZE;
+                }
                 break;
             case LEFT:
                 head.x -= STEP_SIZE;
-                body.x -= STEP_SIZE;
+                for (size_t i = 0; i <= body_index; i++) {
+                    body[i].x -= STEP_SIZE;
+                }
                 break;
             case STOP:
                 break;
+        }
+        if (add_segment) {
+            body_index += 1;
+            body[body_index] = create_body_segment(&head, dir);
+            add_segment = false;
         }
 
         // Clear window
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // Draw body
+        // Draw head
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderFillRect(renderer, &head);
+
+        // Draw body
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &body);
+        for (size_t i = 0; i <= body_index; i++) {
+            SDL_RenderFillRect(renderer, &body[i]);
+        }
         
         SDL_RenderPresent(renderer);
         SDL_Delay(25);
