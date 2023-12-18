@@ -1,13 +1,15 @@
 #include <SDL2/SDL.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 #include <stdbool.h>
 
 const int STEP_SIZE = 5;
 const int SNAKE_START_X = 500;
 const int SNAKE_START_Y = 500;
-const int SNAKE_WIDTH = 10;
-const int SNAKE_HEIGHT = 10;
-
-
+const int SEG_WIDTH = 20;
+const int WINDOW_WIDTH = 1000;
+const int WINDOW_HEIGHT = 1000;
    
 enum Direction {
     DOWN,
@@ -17,13 +19,27 @@ enum Direction {
     STOP
 };
 
+bool touching(const SDL_Rect *r1, const SDL_Rect *r2) {
+    const int x1 = r1->x;
+    const int y1 = r1->y;
+    const int x2 = r2->x;
+    const int y2 = r2->y;
+    const double distance = sqrt( pow((x2 - x1), 2) + pow((y2 - y1),2) );
+    if (distance <= 20.0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
-SDL_Rect create_segment(const SDL_Rect *snake_head, int direction) {
+
+SDL_Rect create_segment(const SDL_Rect *rect, int direction) {
     
-    int segx = snake_head->x;
-    int segy = snake_head->y;
-    const int segw = snake_head->w;
-    const int segh = snake_head->h;
+    int segx = rect->x;
+    int segy = rect->y;
+    const int segw = rect->w;
+    const int segh = rect->h;
     switch (direction) {
         case (DOWN):
             segy -= segw; 
@@ -42,7 +58,7 @@ SDL_Rect create_segment(const SDL_Rect *snake_head, int direction) {
             break;
             
     }
-    SDL_Rect seg = {
+    const SDL_Rect seg = {
         .x = segx,
         .y = segy,
         .w = segw,
@@ -53,15 +69,17 @@ SDL_Rect create_segment(const SDL_Rect *snake_head, int direction) {
 }
 
 
-
 int main() {
+
+    srand(time(NULL));
+
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_Window *window = SDL_CreateWindow(
         "Snake",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        1000,
-        1000,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT,
         0
     );
     
@@ -69,18 +87,15 @@ int main() {
     SDL_Event e;
     bool running = true;
 
-    int dir = 0;
-
     SDL_Rect head = {
         .x = SNAKE_START_X,
         .y = SNAKE_START_Y,
-        .w = SNAKE_WIDTH,
-        .h = SNAKE_HEIGHT
+        .w = SEG_WIDTH,
+        .h = SEG_WIDTH
     };
 
-    dir = STOP;
+    int dir = STOP;
     bool add_segment = false;
-    bool flipflop = false;
     size_t body_index = 0;
     SDL_Rect body[200];
     SDL_Rect body_last[200];
@@ -90,6 +105,11 @@ int main() {
     for (size_t i = 0; i <= body_index; i++) {
         body_last[i] = body[i];
     }
+
+    int food_x = rand() % WINDOW_WIDTH;
+    int food_y = rand() % WINDOW_WIDTH;
+    SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
+
     while (running) {
 
         while (SDL_PollEvent(&e)) {
@@ -164,6 +184,20 @@ int main() {
             }
             SDL_RenderFillRect(renderer, &body[i]);
         }
+
+        if (touching(&food_rect, &body[0])) {
+            add_segment = true;
+            food_x = rand() % 1001;
+            food_y = rand() % 1001;
+            food_rect.x = food_x;
+            food_rect.y = food_y;
+        }
+        
+        printf("Length = %ld\n", body_index + 1);
+
+        // draw food
+        SDL_SetRenderDrawColor(renderer, 210, 120, 10, 255);
+        SDL_RenderFillRect(renderer, &food_rect);
         
         SDL_RenderPresent(renderer);
         SDL_Delay(25);
