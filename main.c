@@ -80,12 +80,18 @@ int main() {
 
     dir = STOP;
     bool add_segment = false;
-    SDL_Rect body[200];
+    bool flipflop = false;
     size_t body_index = 0;
+    SDL_Rect body[200];
+    SDL_Rect body_last[200];
     body[body_index] = head;
+    body_index += 1;
+    body[body_index] = create_segment(&body[body_index-1], dir);
+    for (size_t i = 0; i <= body_index; i++) {
+        body_last[i] = body[i];
+    }
     while (running) {
 
-        // Check input
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = false;
@@ -109,35 +115,39 @@ int main() {
             }
         }
 
-        // Move
-        switch (dir) {
-            case DOWN:
-                for (size_t i = 0; i <= body_index; i++) {
-                    body[i].y += STEP_SIZE;
-                }
-                break;
-            case UP:
-                for (size_t i = 0; i <= body_index; i++) {
-                    body[i].y -= STEP_SIZE;
-                }
-                break;
-            case RIGHT:
-                for (size_t i = 0; i <= body_index; i++) {
-                    body[i].x += STEP_SIZE;
-                }
-                break;
-            case LEFT:
-                for (size_t i = 0; i <= body_index; i++) {
-                    body[i].x -= STEP_SIZE;
-                }
-                break;
-            case STOP:
-                break;
-        }
         if (add_segment) {
             body_index += 1;
             body[body_index] = create_segment(&body[body_index-1], dir);
             add_segment = false;
+        }
+
+        // move head
+        switch (dir) {
+            case DOWN:
+                body[0].y += STEP_SIZE;
+                break;
+            case UP:
+                body[0].y -= STEP_SIZE;
+                break;
+            case RIGHT:
+                body[0].x += STEP_SIZE;
+                break;
+            case LEFT:
+                body[0].x -= STEP_SIZE;
+                break;
+            case STOP:
+                break;
+        }
+        
+        // each segment should move to where the one in front of it was
+        for (size_t i = 1; i <= body_index; i++) {
+            body[i].x = body_last[i-1].x;
+            body[i].y = body_last[i-1].y;
+        }
+
+        // save this state
+        for (size_t i = 0; i <= body_index; i++) {
+            body_last[i] = body[i];
         }
 
         // Clear window
