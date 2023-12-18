@@ -18,7 +18,7 @@ enum Direction {
 };
 
 
-SDL_Rect create_body_segment(const SDL_Rect *snake_head, int direction) {
+SDL_Rect create_segment(const SDL_Rect *snake_head, int direction) {
     
     int segx = snake_head->x;
     int segy = snake_head->y;
@@ -82,6 +82,7 @@ int main() {
     bool add_segment = false;
     SDL_Rect body[200];
     size_t body_index = 0;
+    body[body_index] = head;
     while (running) {
 
         // Check input
@@ -106,33 +107,26 @@ int main() {
                     add_segment = true;
                 }
             }
-            // else if (e.type == SDL_KEYUP) {
-            //     dir = STOP;
-            // }
         }
 
         // Move
         switch (dir) {
             case DOWN:
-                head.y += STEP_SIZE;
                 for (size_t i = 0; i <= body_index; i++) {
                     body[i].y += STEP_SIZE;
                 }
                 break;
             case UP:
-                head.y -= STEP_SIZE;
                 for (size_t i = 0; i <= body_index; i++) {
                     body[i].y -= STEP_SIZE;
                 }
                 break;
             case RIGHT:
-                head.x += STEP_SIZE;
                 for (size_t i = 0; i <= body_index; i++) {
                     body[i].x += STEP_SIZE;
                 }
                 break;
             case LEFT:
-                head.x -= STEP_SIZE;
                 for (size_t i = 0; i <= body_index; i++) {
                     body[i].x -= STEP_SIZE;
                 }
@@ -142,7 +136,7 @@ int main() {
         }
         if (add_segment) {
             body_index += 1;
-            body[body_index] = create_body_segment(&head, dir);
+            body[body_index] = create_segment(&body[body_index-1], dir);
             add_segment = false;
         }
 
@@ -150,13 +144,14 @@ int main() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // Draw head
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &head);
-
         // Draw body
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         for (size_t i = 0; i <= body_index; i++) {
+            if (i == 0) {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            }
+            else {
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            }
             SDL_RenderFillRect(renderer, &body[i]);
         }
         
