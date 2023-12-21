@@ -179,8 +179,11 @@ int main() {
             if (i == 0) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             }
-            else {
+            else if (i % 2 == 0){
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            }
+            else {
+                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
             }
             SDL_RenderFillRect(renderer, &body[i]);
         }
