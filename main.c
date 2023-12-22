@@ -32,6 +32,7 @@ const int WINDOW_WIDTH = 700;
 const int WINDOW_HEIGHT = 700;
 const int WINDOW_ALPHA = 100;
 const int SNAKE_BUFFER_SIZE = 500;
+const bool WRAP = false;
 
 bool touching(const SDL_Rect *r1, const SDL_Rect *r2, int tol) {
     const int x1 = r1->x;
@@ -273,17 +274,27 @@ int main() {
             }
 
             // enable wrap-around
-            if (snake[0].x < 0) {
-                snake[0].x = WINDOW_WIDTH;
+            if (WRAP) {
+                if (snake[0].x < 0) {
+                    snake[0].x = WINDOW_WIDTH;
+                }
+                else if (snake[0].x > WINDOW_WIDTH) {
+                    snake[0].x = 0;
+                }
+                else if (snake[0].y > WINDOW_HEIGHT) {
+                    snake[0].y = 0;
+                }
+                else if (snake[0].y < 0) {
+                    snake[0].y = WINDOW_HEIGHT;
+                }
             }
-            else if (snake[0].x > WINDOW_WIDTH) {
-                snake[0].x = 0;
-            }
-            else if (snake[0].y > WINDOW_HEIGHT) {
-                snake[0].y = 0;
-            }
-            else if (snake[0].y < 0) {
-                snake[0].y = WINDOW_HEIGHT;
+            else {
+                if (snake[0].x < 0 || snake[0].x > WINDOW_WIDTH) {
+                    dead = true;
+                }
+                if (snake[0].y < 0 || snake[0].y > WINDOW_WIDTH) {
+                    dead = true;
+                }
             }
 
             // each segment should move to where the one in front of it was
@@ -318,6 +329,7 @@ int main() {
         // You lost, flicker snake and exit
         else {
             flash_snake(snake, renderer, snake_index);
+            printf("Score = %d\n", snake_index + 1);
             running = false;
         }
 
