@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_stdinc.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
@@ -6,10 +7,10 @@
 
 const int SNAKE_START_X = 500;
 const int SNAKE_START_Y = 500;
-const int SEG_WIDTH = 20;
+const int SEG_WIDTH = 25;
 const int STEP_SIZE = SEG_WIDTH;
-const int WINDOW_WIDTH = 1000;
-const int WINDOW_HEIGHT = 1000;
+const int WINDOW_WIDTH = 700;
+const int WINDOW_HEIGHT = 700;
    
 enum Direction {
     DOWN,
@@ -100,18 +101,23 @@ int main() {
     SDL_Rect snake[200];
     SDL_Rect snake_last[200];
     snake[snake_index] = head;
-    snake_index += 1;
-    snake[snake_index] = create_segment(&snake[snake_index-1], dir);
+    // snake_index += 1;
+    // snake[snake_index] = create_segment(&snake[snake_index-1], dir);
     for (size_t i = 0; i <= snake_index; i++) {
         snake_last[i] = snake[i];
     }
-
+    
+    // initialize random food location
     int food_x = rand() % WINDOW_WIDTH;
-    int food_y = rand() % WINDOW_WIDTH;
+    int food_y = rand() % WINDOW_HEIGHT;
+    printf("Food: (%d, %d)\n", food_x, food_y);
     SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
 
-    while (running) {
+    Uint32 last_time = SDL_GetTicks();
+    const Uint32 delta_time = 200;
 
+    while (running) {
+        
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = false;
@@ -140,33 +146,36 @@ int main() {
             snake[snake_index] = create_segment(&snake[snake_index-1], dir);
             add_segment = false;
         }
-
-        // move head
-        switch (dir) {
-            case DOWN:
-                snake[0].y += STEP_SIZE;
-                break;
-            case UP:
-                snake[0].y -= STEP_SIZE;
-                break;
-            case RIGHT:
-                snake[0].x += STEP_SIZE;
-                break;
-            case LEFT:
-                snake[0].x -= STEP_SIZE;
-                break;
-            case STOP:
-                break;
-        }
         
-        // each segment should move to where the one in front of it was
-        for (size_t i = 1; i <= snake_index; i++) {
-            snake[i] = snake_last[i-1];
-        }
+        const Uint32 current_time = SDL_GetTicks();
+        if ( (current_time - last_time) >= delta_time) {
+            last_time = current_time;
 
-        // save this state
-        for (size_t i = 0; i <= snake_index; i++) {
-            snake_last[i] = snake[i];
+            // move head
+            switch (dir) {
+                case DOWN:
+                    snake[0].y += STEP_SIZE;
+                    break;
+                case UP:
+                    snake[0].y -= STEP_SIZE;
+                    break;
+                case RIGHT:
+                    snake[0].x += STEP_SIZE;
+                    break;
+                case LEFT:
+                    snake[0].x -= STEP_SIZE;
+                    break;
+                case STOP:
+                    break;
+            }
+            // each segment should move to where the one in front of it was
+            for (size_t i = 1; i <= snake_index; i++) {
+                snake[i] = snake_last[i-1];
+            }
+            // save this state
+            for (size_t i = 0; i <= snake_index; i++) {
+                snake_last[i] = snake[i];
+            }
         }
 
         // Clear window
@@ -191,13 +200,13 @@ int main() {
 
         if (touching(&food_rect, &snake[0])) {
             add_segment = true;
-            food_x = rand() % 1001;
-            food_y = rand() % 1001;
+            food_x = rand() % (WINDOW_WIDTH - SEG_WIDTH);
+            food_y = rand() % (WINDOW_HEIGHT - SEG_WIDTH);
             food_rect.x = food_x;
             food_rect.y = food_y;
         }
         
-        printf("Length = %ld\n", snake_index + 1);
+        // printf("Length = %ld\n", snake_index + 1);
 
         // draw food
         SDL_SetRenderDrawColor(renderer, 210, 120, 10, 255);
