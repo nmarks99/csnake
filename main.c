@@ -4,10 +4,10 @@
 #include <math.h>
 #include <stdbool.h>
 
-const int STEP_SIZE = 5;
 const int SNAKE_START_X = 500;
 const int SNAKE_START_Y = 500;
 const int SEG_WIDTH = 20;
+const int STEP_SIZE = SEG_WIDTH;
 const int WINDOW_WIDTH = 1000;
 const int WINDOW_HEIGHT = 1000;
    
@@ -25,7 +25,7 @@ bool touching(const SDL_Rect *r1, const SDL_Rect *r2) {
     const int x2 = r2->x;
     const int y2 = r2->y;
     const double distance = sqrt( pow((x2 - x1), 2) + pow((y2 - y1),2) );
-    if (distance <= 20.0) {
+    if (distance <= SEG_WIDTH) {
         return true;
     }
     else {
@@ -96,14 +96,14 @@ int main() {
 
     int dir = STOP;
     bool add_segment = false;
-    size_t body_index = 0;
-    SDL_Rect body[200];
-    SDL_Rect body_last[200];
-    body[body_index] = head;
-    body_index += 1;
-    body[body_index] = create_segment(&body[body_index-1], dir);
-    for (size_t i = 0; i <= body_index; i++) {
-        body_last[i] = body[i];
+    size_t snake_index = 0;
+    SDL_Rect snake[200];
+    SDL_Rect snake_last[200];
+    snake[snake_index] = head;
+    snake_index += 1;
+    snake[snake_index] = create_segment(&snake[snake_index-1], dir);
+    for (size_t i = 0; i <= snake_index; i++) {
+        snake_last[i] = snake[i];
     }
 
     int food_x = rand() % WINDOW_WIDTH;
@@ -117,65 +117,66 @@ int main() {
                 running = false;
             }
             if (e.type == SDL_KEYDOWN) {
-                if (e.key.keysym.sym == SDLK_DOWN) {
+                if (e.key.keysym.sym == SDLK_s) {
                     dir = DOWN;
                 }
-                if (e.key.keysym.sym == SDLK_UP) {
+                else if (e.key.keysym.sym == SDLK_w) {
                     dir = UP;
                 }
-                if (e.key.keysym.sym == SDLK_LEFT) {
+                else if (e.key.keysym.sym == SDLK_a) {
                     dir = LEFT;
                 }
-                if (e.key.keysym.sym == SDLK_RIGHT) {
+                else if (e.key.keysym.sym == SDLK_d) {
                     dir = RIGHT;
                 }
-                if (e.key.keysym.sym == SDLK_a) {
-                    add_segment = true;
+                else if (e.key.keysym.sym == SDLK_q) {
+                    running = false;
                 }
             }
         }
 
         if (add_segment) {
-            body_index += 1;
-            body[body_index] = create_segment(&body[body_index-1], dir);
+            snake_index += 1;
+            snake[snake_index] = create_segment(&snake[snake_index-1], dir);
             add_segment = false;
         }
 
         // move head
         switch (dir) {
             case DOWN:
-                body[0].y += STEP_SIZE;
+                snake[0].y += STEP_SIZE;
                 break;
             case UP:
-                body[0].y -= STEP_SIZE;
+                snake[0].y -= STEP_SIZE;
                 break;
             case RIGHT:
-                body[0].x += STEP_SIZE;
+                snake[0].x += STEP_SIZE;
                 break;
             case LEFT:
-                body[0].x -= STEP_SIZE;
+                snake[0].x -= STEP_SIZE;
                 break;
             case STOP:
                 break;
         }
         
         // each segment should move to where the one in front of it was
-        for (size_t i = 1; i <= body_index; i++) {
-            body[i].x = body_last[i-1].x;
-            body[i].y = body_last[i-1].y;
+        for (size_t i = 1; i <= snake_index; i++) {
+            snake[i] = snake_last[i-1];
         }
 
         // save this state
-        for (size_t i = 0; i <= body_index; i++) {
-            body_last[i] = body[i];
+        for (size_t i = 0; i <= snake_index; i++) {
+            snake_last[i] = snake[i];
         }
 
         // Clear window
+        SDL_RenderSetScale(renderer, 1.0, 1.0);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+        
 
         // Draw body
-        for (size_t i = 0; i <= body_index; i++) {
+        for (size_t i = 0; i <= snake_index; i++) {
             if (i == 0) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             }
@@ -185,10 +186,10 @@ int main() {
             else {
                 SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
             }
-            SDL_RenderFillRect(renderer, &body[i]);
+            SDL_RenderFillRect(renderer, &snake[i]);
         }
 
-        if (touching(&food_rect, &body[0])) {
+        if (touching(&food_rect, &snake[0])) {
             add_segment = true;
             food_x = rand() % 1001;
             food_y = rand() % 1001;
@@ -196,7 +197,7 @@ int main() {
             food_rect.y = food_y;
         }
         
-        printf("Length = %ld\n", body_index + 1);
+        printf("Length = %ld\n", snake_index + 1);
 
         // draw food
         SDL_SetRenderDrawColor(renderer, 210, 120, 10, 255);
