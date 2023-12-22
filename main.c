@@ -271,10 +271,26 @@ int main() {
                 case STOP:
                     break;
             }
+
+            // enable wrap-around
+            if (snake[0].x < 0) {
+                snake[0].x = WINDOW_WIDTH;
+            }
+            else if (snake[0].x > WINDOW_WIDTH) {
+                snake[0].x = 0;
+            }
+            else if (snake[0].y > WINDOW_HEIGHT) {
+                snake[0].y = 0;
+            }
+            else if (snake[0].y < 0) {
+                snake[0].y = WINDOW_HEIGHT;
+            }
+
             // each segment should move to where the one in front of it was
             for (int i = 1; i <= snake_index; i++) {
                 snake[i] = snake_last[i-1];
             }
+
             save_snake_state(snake, snake_last, snake_index);
         }
 
