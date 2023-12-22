@@ -1,13 +1,8 @@
 #include <SDL2/SDL.h>
-// #include <SDL2/SDL_render.h>
-// #include <SDL2/SDL_stdinc.h>
-// #include <SDL2/SDL_video.h>
-#include <SDL2/SDL_keycode.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <stdbool.h>
-
    
 enum Direction {
     DOWN,
@@ -28,6 +23,7 @@ typedef enum DrawColor {
     WHITE
 } DrawColor;
 
+
 const int SNAKE_START_X = 500;
 const int SNAKE_START_Y = 500;
 const int SEG_WIDTH = 25;
@@ -35,6 +31,7 @@ const int STEP_SIZE = SEG_WIDTH;
 const int WINDOW_WIDTH = 700;
 const int WINDOW_HEIGHT = 700;
 const int WINDOW_ALPHA = 100;
+const int SNAKE_BUFFER_SIZE = 500;
 
 bool touching(const SDL_Rect *r1, const SDL_Rect *r2, int tol) {
     const int x1 = r1->x;
@@ -84,7 +81,6 @@ SDL_Rect create_segment(const SDL_Rect *rect, int direction) {
 
     return seg;
 }
-
 
 
 void SDL_SetRenderDrawColorCommon(SDL_Renderer *renderer, DrawColor color, int alpha) {
@@ -172,6 +168,11 @@ bool collision_detected(SDL_Rect *snake, int snake_index) {
     return false;
 }
 
+void save_snake_state(SDL_Rect *snake, SDL_Rect *snake_save, int snake_index) {
+    for (int i = 0; i <= snake_index; i++) {
+        snake_save[i] = snake[i];
+    }
+}
 
 
 int main() {
@@ -205,21 +206,15 @@ int main() {
     int dir = STOP;
     bool add_segment = false;
     int snake_index = 0;
-    SDL_Rect snake[200];
-    SDL_Rect snake_last[200];
+    SDL_Rect snake[SNAKE_BUFFER_SIZE];
+    SDL_Rect snake_last[SNAKE_BUFFER_SIZE];
     snake[snake_index] = head;
-    // snake_index += 1;
-    // snake[snake_index] = create_segment(&snake[snake_index-1], dir);
-    for (int i = 0; i <= snake_index; i++) {
-        snake_last[i] = snake[i];
-    }
-    
-    // initialize random food location
+    save_snake_state(snake, snake_last, snake_index);
+
     SDL_Rect food = create_food();
 
     Uint32 last_time = SDL_GetTicks();
     const Uint32 delta_time = 150;
-
 
     while (running) {
         
@@ -280,10 +275,7 @@ int main() {
             for (int i = 1; i <= snake_index; i++) {
                 snake[i] = snake_last[i-1];
             }
-            // save this state
-            for (int i = 0; i <= snake_index; i++) {
-                snake_last[i] = snake[i];
-            }
+            save_snake_state(snake, snake_last, snake_index);
         }
 
         if (touching(&food, &snake[0], SEG_WIDTH)) {
