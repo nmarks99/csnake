@@ -36,13 +36,13 @@ const int WINDOW_WIDTH = 700;
 const int WINDOW_HEIGHT = 700;
 const int WINDOW_ALPHA = 100;
 
-bool touching(const SDL_Rect *r1, const SDL_Rect *r2) {
+bool touching(const SDL_Rect *r1, const SDL_Rect *r2, int tol) {
     const int x1 = r1->x;
     const int y1 = r1->y;
     const int x2 = r2->x;
     const int y2 = r2->y;
     const double distance = sqrt( pow((x2 - x1), 2) + pow((y2 - y1),2) );
-    if (distance <= SEG_WIDTH) {
+    if (distance <= tol) {
         return true;
     }
     else {
@@ -126,7 +126,7 @@ void SDL_SetRenderDrawColorCommon(SDL_Renderer *renderer, DrawColor color, int a
 
 
 void render_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index, int snake_opacity) {
-    for (size_t i = 0; i <= snake_index; i++) {
+    for (int i = 0; i <= snake_index; i++) {
         if (i % 2 == 0){
             SDL_SetRenderDrawColorCommon(renderer, YELLOW, snake_opacity);
         }
@@ -139,7 +139,7 @@ void render_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index, int 
 
 void flash_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index) {
 
-    for (size_t i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         if (i % 2 == 0) {
             render_snake(snake, renderer, snake_index, 100);
             SDL_RenderPresent(renderer);
@@ -162,6 +162,16 @@ SDL_Rect create_food() {
     const SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
     return food_rect;
 }
+
+bool collision_detected(SDL_Rect *snake, int snake_index) {
+    for (int i = 1; i <= snake_index; i++) {
+        if (touching(&snake[0], &snake[i], SEG_WIDTH/2)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 
 int main() {
@@ -194,13 +204,13 @@ int main() {
     bool dead = false;
     int dir = STOP;
     bool add_segment = false;
-    size_t snake_index = 0;
+    int snake_index = 0;
     SDL_Rect snake[200];
     SDL_Rect snake_last[200];
     snake[snake_index] = head;
     // snake_index += 1;
     // snake[snake_index] = create_segment(&snake[snake_index-1], dir);
-    for (size_t i = 0; i <= snake_index; i++) {
+    for (int i = 0; i <= snake_index; i++) {
         snake_last[i] = snake[i];
     }
     
@@ -233,11 +243,8 @@ int main() {
                 else if (e.key.keysym.sym == SDLK_SPACE) {
                     dir = STOP;
                 }
-                else if (e.key.keysym.sym == SDLK_q) {
-                    running = false;
-                }
-                else if (e.key.keysym.sym == SDLK_o) {
-                    dead = true;
+                else if (e.key.keysym.sym == SDLK_y) {
+                    add_segment = true;
                 }
             }
         }
@@ -270,19 +277,21 @@ int main() {
                     break;
             }
             // each segment should move to where the one in front of it was
-            for (size_t i = 1; i <= snake_index; i++) {
+            for (int i = 1; i <= snake_index; i++) {
                 snake[i] = snake_last[i-1];
             }
             // save this state
-            for (size_t i = 0; i <= snake_index; i++) {
+            for (int i = 0; i <= snake_index; i++) {
                 snake_last[i] = snake[i];
             }
         }
 
-        if (touching(&food, &snake[0])) {
+        if (touching(&food, &snake[0], SEG_WIDTH)) {
             add_segment = true;
             food = create_food();
         }
+        
+        if (collision_detected(snake, snake_index)) { dead = true; }
         
         // Clear window
         SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
