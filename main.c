@@ -1,16 +1,13 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_stdinc.h>
+// #include <SDL2/SDL_render.h>
+// #include <SDL2/SDL_stdinc.h>
+// #include <SDL2/SDL_video.h>
+#include <SDL2/SDL_keycode.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <stdbool.h>
 
-const int SNAKE_START_X = 500;
-const int SNAKE_START_Y = 500;
-const int SEG_WIDTH = 25;
-const int STEP_SIZE = SEG_WIDTH;
-const int WINDOW_WIDTH = 700;
-const int WINDOW_HEIGHT = 700;
    
 enum Direction {
     DOWN,
@@ -19,6 +16,25 @@ enum Direction {
     UP,
     STOP
 };
+
+typedef enum DrawColor {
+    RED,
+    ORANGE,
+    YELLOW,
+    GREEN,
+    BLUE,
+    PURPLE,
+    BLACK,
+    WHITE
+} DrawColor;
+
+const int SNAKE_START_X = 500;
+const int SNAKE_START_Y = 500;
+const int SEG_WIDTH = 25;
+const int STEP_SIZE = SEG_WIDTH;
+const int WINDOW_WIDTH = 700;
+const int WINDOW_HEIGHT = 700;
+const int WINDOW_ALPHA = 100;
 
 bool touching(const SDL_Rect *r1, const SDL_Rect *r2) {
     const int x1 = r1->x;
@@ -70,6 +86,84 @@ SDL_Rect create_segment(const SDL_Rect *rect, int direction) {
 }
 
 
+
+void SDL_SetRenderDrawColorCommon(SDL_Renderer *renderer, DrawColor color, int alpha) {
+    int r;
+    int g;
+    int b;
+    switch (color) {
+        case (RED):
+            r = 255; g = 0; b = 0;
+            break;
+        case (ORANGE):
+            r = 255; g = 165; b = 0;
+            break;
+        case (YELLOW):
+            r = 255; g = 255; b = 0;
+            break;
+        case (GREEN):
+            r = 0; g = 128; b = 0;
+            break;
+        case (BLUE):
+            r = 0; g = 0; b = 255;
+            break;
+        case (PURPLE):
+            r = 128; g = 0; b = 128;
+            break;
+        case (WHITE):
+            r = 255; g = 255; b = 255;
+            break;
+        case (BLACK):
+            r = 0; g = 0; b = 0;
+            break;
+    }
+    
+    alpha = (alpha > 100) ? 100 : alpha;
+    alpha = (alpha < 0) ? 0 : alpha;
+    alpha = (int)(((double)alpha / 100.0) * 255.0);
+    SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
+}
+
+
+void render_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index, int snake_opacity) {
+    for (size_t i = 0; i <= snake_index; i++) {
+        if (i % 2 == 0){
+            SDL_SetRenderDrawColorCommon(renderer, YELLOW, snake_opacity);
+        }
+        else {
+            SDL_SetRenderDrawColorCommon(renderer, RED, snake_opacity);
+        }
+        SDL_RenderFillRect(renderer, &snake[i]);
+    }
+}
+
+void flash_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index) {
+
+    for (size_t i = 0; i < 10; i++) {
+        if (i % 2 == 0) {
+            render_snake(snake, renderer, snake_index, 100);
+            SDL_RenderPresent(renderer);
+            SDL_Delay(100);
+        }
+        else {
+            render_snake(snake, renderer, snake_index, 10);
+            SDL_RenderPresent(renderer);
+            SDL_Delay(100);
+        }
+        SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
+        SDL_RenderClear(renderer);
+    }
+}
+
+
+SDL_Rect create_food() {
+    const int food_x = rand() % (WINDOW_WIDTH - SEG_WIDTH);
+    const int food_y = rand() % (WINDOW_HEIGHT - SEG_WIDTH);
+    const SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
+    return food_rect;
+}
+
+
 int main() {
 
     srand(time(NULL));
@@ -81,10 +175,12 @@ int main() {
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        0
+        SDL_WINDOW_SHOWN
     );
     
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
     SDL_Event e;
     bool running = true;
 
@@ -95,6 +191,7 @@ int main() {
         .h = SEG_WIDTH
     };
 
+    bool dead = false;
     int dir = STOP;
     bool add_segment = false;
     size_t snake_index = 0;
@@ -108,13 +205,11 @@ int main() {
     }
     
     // initialize random food location
-    int food_x = rand() % WINDOW_WIDTH;
-    int food_y = rand() % WINDOW_HEIGHT;
-    printf("Food: (%d, %d)\n", food_x, food_y);
-    SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
+    SDL_Rect food = create_food();
 
     Uint32 last_time = SDL_GetTicks();
-    const Uint32 delta_time = 200;
+    const Uint32 delta_time = 150;
+
 
     while (running) {
         
@@ -135,8 +230,14 @@ int main() {
                 else if (e.key.keysym.sym == SDLK_d) {
                     dir = RIGHT;
                 }
+                else if (e.key.keysym.sym == SDLK_SPACE) {
+                    dir = STOP;
+                }
                 else if (e.key.keysym.sym == SDLK_q) {
                     running = false;
+                }
+                else if (e.key.keysym.sym == SDLK_o) {
+                    dead = true;
                 }
             }
         }
@@ -148,7 +249,7 @@ int main() {
         }
         
         const Uint32 current_time = SDL_GetTicks();
-        if ( (current_time - last_time) >= delta_time) {
+        if ( ((current_time - last_time) >= delta_time) && dir != STOP) {
             last_time = current_time;
 
             // move head
@@ -178,45 +279,31 @@ int main() {
             }
         }
 
-        // Clear window
-        SDL_RenderSetScale(renderer, 1.0, 1.0);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        
-
-        // Draw body
-        for (size_t i = 0; i <= snake_index; i++) {
-            if (i == 0) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            }
-            else if (i % 2 == 0){
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-            }
-            else {
-                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-            }
-            SDL_RenderFillRect(renderer, &snake[i]);
-        }
-
-        if (touching(&food_rect, &snake[0])) {
+        if (touching(&food, &snake[0])) {
             add_segment = true;
-            food_x = rand() % (WINDOW_WIDTH - SEG_WIDTH);
-            food_y = rand() % (WINDOW_HEIGHT - SEG_WIDTH);
-            food_rect.x = food_x;
-            food_rect.y = food_y;
+            food = create_food();
         }
         
-        // printf("Length = %ld\n", snake_index + 1);
+        // Clear window
+        SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
+        SDL_RenderClear(renderer);
 
-        // draw food
-        SDL_SetRenderDrawColor(renderer, 210, 120, 10, 255);
-        SDL_RenderFillRect(renderer, &food_rect);
-        
-        SDL_RenderPresent(renderer);
-        SDL_Delay(25);
+        if (!dead) {
+            render_snake(snake, renderer, snake_index, 100);
+
+            SDL_SetRenderDrawColorCommon(renderer, GREEN, 100);
+            SDL_RenderFillRect(renderer, &food);
+            
+            SDL_RenderPresent(renderer);
+            SDL_Delay(25);
+        }
+
+        // You lost, flicker snake and exit
+        else {
+            flash_snake(snake, renderer, snake_index);
+            running = false;
+        }
 
     }
-
     return 0;
-
 }
