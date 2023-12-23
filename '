@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdlib.h>
 #include <time.h>
@@ -35,6 +34,7 @@ const int WINDOW_HEIGHT = 700;
 const int WINDOW_ALPHA = 100;
 const int SNAKE_BUFFER_SIZE = 500;
 const bool WRAP = false;
+const char FONT_PATH[] = "./fonts/JetBrainsMonoNerdFont-Medium.ttf";
 
 bool touching(const SDL_Rect *r1, const SDL_Rect *r2, int tol) {
     const int x1 = r1->x;
@@ -177,12 +177,24 @@ void save_snake_state(SDL_Rect *snake, SDL_Rect *snake_save, int snake_index) {
     }
 }
 
+void draw_text(const char *msg, int x, int y, TTF_Font *font, SDL_Renderer *renderer) {
+
+    SDL_Color color = { 0, 128, 128 };
+    SDL_Surface* text_surface = TTF_RenderText_Solid(font, msg, color);
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+    SDL_Rect dest = {0, 0, text_surface->w, text_surface->h};
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, text_texture, NULL, &dest);
+    SDL_RenderPresent(renderer);
+}
+
 
 int main() {
 
     srand(time(NULL));
 
     SDL_Init(SDL_INIT_EVERYTHING);
+
     SDL_Window *window = SDL_CreateWindow(
         "Snake",
         SDL_WINDOWPOS_CENTERED,
@@ -192,37 +204,37 @@ int main() {
         SDL_WINDOW_SHOWN
     );
     
+    if (TTF_Init() < 0) {
+        printf("Failed to initialize TTF\n");
+        return 1;
+    }
+    
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
 
     // Clear window
     SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
     SDL_RenderClear(renderer);
     
-    if (TTF_Init() < 0) {
-        printf("Failed to initialize TTF\n");
-        return 1;
-    }
-    SDL_Color color = { 0, 128, 128 };
+    // SDL_Color color = { 0, 128, 128 };
     TTF_Font* font;
-    font = TTF_OpenFont("./fonts/JetBrainsMonoNerdFont-Medium.ttf", 24);
-    if (!font) {
-        fprintf(stderr, "Font loading failed: %s\n", TTF_GetError());
-        TTF_Quit();
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-    SDL_Surface* text = TTF_RenderText_Solid(font, "Snake", color);
-    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text);
-    SDL_Rect dest = {0, 0, text->w, text->h};
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, text_texture, NULL, &dest);
-    SDL_RenderPresent(renderer);
-    SDL_Delay(1000);
-
+    font = TTF_OpenFont(font_path, 24);
+    // if (!font) {
+    //     fprintf(stderr, "Font loading failed: %s\n", TTF_GetError());
+    //     TTF_Quit();
+    //     SDL_DestroyRenderer(renderer);
+    //     SDL_DestroyWindow(window);
+    //     SDL_Quit();
+    //     return 1;
+    // }
+    // SDL_Surface* text = TTF_RenderText_Solid(font, "Snake", color);
+    // SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text);
+    // SDL_Rect dest = {0, 0, text->w, text->h};
+    // SDL_RenderClear(renderer);
+    // SDL_RenderCopy(renderer, text_texture, NULL, &dest);
+    // SDL_RenderPresent(renderer);
+    // SDL_Delay(1000);
+    //
     SDL_Event e;
     bool running = true;
 
