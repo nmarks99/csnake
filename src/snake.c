@@ -31,17 +31,17 @@ typedef struct Text {
     int y;
 } Text; 
 
-const int SNAKE_START_X = 500;
-const int SNAKE_START_Y = 500;
-const int SEG_WIDTH = 25;
+const int SEG_WIDTH = 30;
 const int STEP_SIZE = SEG_WIDTH;
 const int WINDOW_WIDTH = 700;
 const int WINDOW_HEIGHT = 700;
+const int SNAKE_START_X = WINDOW_WIDTH/2;
+const int SNAKE_START_Y = WINDOW_HEIGHT/2;
 const int WINDOW_ALPHA = 100;
 const int SNAKE_BUFFER_SIZE = 500;
 const bool WRAP = false;
 const char FONT_PATH[] = "./fonts/JetBrainsMonoNerdFont-Medium.ttf";
-const int DEFAULT_FONT_SIZE = 24;
+const int DEFAULT_FONT_SIZE = 32;
 
 bool touching(const SDL_Rect *r1, const SDL_Rect *r2, int tol) {
     const int x1 = r1->x;
@@ -193,6 +193,22 @@ void draw_text(Text text, TTF_Font *font, SDL_Renderer *renderer) {
     SDL_RenderPresent(renderer);
 }
 
+void show_score(int snake_index,TTF_Font *font, SDL_Renderer *renderer){
+    
+    SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
+    SDL_RenderClear(renderer);
+
+    char buff[50];
+    sprintf(buff, "Score: %d", snake_index + 1);
+    Text text = {
+        .msg = buff,
+        .x = 0,
+        .y = 0,
+        .color = {255, 255, 255}
+    };
+    draw_text(text, font, renderer);
+}
+
 
 int main() {
 
@@ -264,6 +280,8 @@ int main() {
         
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
+                show_score(snake_index, font, renderer);
+                SDL_Delay(2000);
                 running = false;
             }
             if (e.type == SDL_KEYDOWN) {
@@ -366,25 +384,13 @@ int main() {
             SDL_RenderFillRect(renderer, &food);
             
             SDL_RenderPresent(renderer);
-            SDL_Delay(25);
+            // SDL_Delay(25);
         }
 
         // You lost, flicker snake, show score, and exit
         else {
             flash_snake(snake, renderer, snake_index);
-            
-            SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
-            SDL_RenderClear(renderer);
-
-            char buff[50];
-            sprintf(buff, "Score: %d", snake_index + 1);
-            Text text = {
-                .msg = buff,
-                .x = 0,
-                .y = 0,
-                .color = {255, 255, 255}
-            };
-            draw_text(text, font, renderer);
+            show_score(snake_index, font, renderer);
             SDL_Delay(2000);
             running = false;
         }
