@@ -162,14 +162,26 @@ void flash_snake(SDL_Rect *snake, SDL_Renderer *renderer, int snake_index) {
 }
 
 
-SDL_Rect create_food() {
-    const int food_x = rand() % (WINDOW_WIDTH - SEG_WIDTH);
-    const int food_y = rand() % (WINDOW_HEIGHT - SEG_WIDTH);
-    const SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
-    return food_rect;
+SDL_Rect create_food(const SDL_Rect *snake, int snake_index) {
+    while (true) {
+        const int food_x = rand() % (WINDOW_WIDTH - SEG_WIDTH);
+        const int food_y = rand() % (WINDOW_HEIGHT - SEG_WIDTH);
+        const SDL_Rect food_rect = {food_x, food_y, SEG_WIDTH, SEG_WIDTH};
+
+        bool overlap = false;
+        for (int i = 1; i < snake_index; i++) {
+            if (touching(&snake[i], &food_rect, SEG_WIDTH)) {
+                overlap = true;
+                break;
+            }
+        }
+        if (!overlap) {
+            return food_rect;
+        }
+    }
 }
 
-bool collision_detected(SDL_Rect *snake, int snake_index) {
+bool collision_detected(const SDL_Rect *snake, int snake_index) {
     for (int i = 1; i <= snake_index; i++) {
         if (touching(&snake[0], &snake[i], SEG_WIDTH/2)) {
             return true;
@@ -178,7 +190,7 @@ bool collision_detected(SDL_Rect *snake, int snake_index) {
     return false;
 }
 
-void save_snake_state(SDL_Rect *snake, SDL_Rect *snake_save, int snake_index) {
+void save_snake_state(const SDL_Rect *snake, SDL_Rect *snake_save, int snake_index) {
     for (int i = 0; i <= snake_index; i++) {
         snake_save[i] = snake[i];
     }
@@ -271,7 +283,7 @@ int main() {
     snake[snake_index] = head;
     save_snake_state(snake, snake_last, snake_index);
 
-    SDL_Rect food = create_food();
+    SDL_Rect food = create_food(snake, snake_index);
 
     Uint32 last_time = SDL_GetTicks();
     const Uint32 delta_time = 150;
@@ -368,7 +380,7 @@ int main() {
 
         if (touching(&food, &snake[0], SEG_WIDTH)) {
             add_segment = true;
-            food = create_food();
+            food = create_food(snake, snake_index);
         }
         
         if (collision_detected(snake, snake_index)) { dead = true; }
@@ -379,12 +391,9 @@ int main() {
 
         if (!dead) {
             render_snake(snake, renderer, snake_index, 100);
-
             SDL_SetRenderDrawColorCommon(renderer, GREEN, 100);
             SDL_RenderFillRect(renderer, &food);
-            
             SDL_RenderPresent(renderer);
-            // SDL_Delay(25);
         }
 
         // You lost, flicker snake, show score, and exit
