@@ -1,4 +1,6 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
@@ -192,6 +194,34 @@ int main() {
     
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+
+    // Clear window
+    SDL_SetRenderDrawColorCommon(renderer, BLACK, WINDOW_ALPHA);
+    SDL_RenderClear(renderer);
+    
+    if (TTF_Init() < 0) {
+        printf("Failed to initialize TTF\n");
+        return 1;
+    }
+    SDL_Color color = { 0, 128, 128 };
+    TTF_Font* font;
+    font = TTF_OpenFont("./fonts/JetBrainsMonoNerdFont-Medium.ttf", 24);
+    if (!font) {
+        fprintf(stderr, "Font loading failed: %s\n", TTF_GetError());
+        TTF_Quit();
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    SDL_Surface* text = TTF_RenderText_Solid(font, "Snake", color);
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text);
+    SDL_Rect dest = {0, 0, text->w, text->h};
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, text_texture, NULL, &dest);
+    SDL_RenderPresent(renderer);
+    SDL_Delay(1000);
 
     SDL_Event e;
     bool running = true;
